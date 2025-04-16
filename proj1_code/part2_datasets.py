@@ -33,16 +33,21 @@ def make_dataset(path: str) -> Tuple[List[str], List[str]]:
            in lexicographically-sorted order
     """
 
-    ############################
-    ### TODO: YOUR CODE HERE ###
-
-    raise NotImplementedError(
-        "`make_dataset` function in `part2_datasets.py` needs to be implemented"
-    )
-
-    ### END OF STUDENT CODE ####
-    ############################
-
+    image_files = [
+            os.path.join(path, f)
+            for f in os.listdir(path)
+            if f.lower().endswith('.bmp')
+        ]
+    
+    # 按文件名排序
+    image_files.sort()
+    
+    # 分割为两个集合：偶数索引为A，奇数索引为B
+    images_a = image_files[::2]   # 步长为2取元素，如0,2,4...
+    images_b = image_files[1::2]  # 步长为2取元素，如1,3,5...
+    
+    # 确保两个集合长度相同
+    assert len(images_a) == len(images_b), "A和B集合图像数量必须相等"
     return images_a, images_b
 
 
@@ -61,17 +66,9 @@ def get_cutoff_frequencies(path: str) -> List[int]:
             length as the number of image pairs in the dataset
     """
 
-    ############################
-    ### TODO: YOUR CODE HERE ###
-
-    raise NotImplementedError(
-        "`get_cutoff_frequencies` function in "
-        + "`part2_datasets.py` needs to be implemented"
-    )
-
-    ### END OF STUDENT CODE ####
-    ############################
-
+    # 读取所有cutoff_frequency值
+    with open(path, 'r') as f:
+        cutoff_frequencies = [int(line.strip()) for line in f]
     return cutoff_frequencies
 
 
@@ -95,18 +92,10 @@ class HybridImageDataset(data.Dataset):
         """
         images_a, images_b = make_dataset(image_dir)
         cutoff_frequencies = get_cutoff_frequencies(cf_file)
+        # 设置变换，将PIL图像转换为torch张量，并将像素值归一化到[0,1]
+        self.transform = transforms.ToTensor()
 
-        self.transform = None
-        ############################
-        ### TODO: YOUR CODE HERE ###
-
-        raise NotImplementedError(
-            "`self.transform` function in `part2_datasets.py` needs to be implemented"
-        )
-
-        ### END OF STUDENT CODE ####
-        ############################
-
+        # 保存图像路径和截止频率
         self.images_a = images_a
         self.images_b = images_b
         self.cutoff_frequencies = cutoff_frequencies
@@ -114,15 +103,7 @@ class HybridImageDataset(data.Dataset):
     def __len__(self) -> int:
         """Returns number of pairs of images in dataset."""
 
-        ############################
-        ### TODO: YOUR CODE HERE ###
-
-        raise NotImplementedError(
-            "`__len__` function in `part2_datasets.py` needs to be implemented"
-        )
-
-        ### END OF STUDENT CODE ####
-        ############################
+        return len(self.images_a)
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, int]:
         """
@@ -148,14 +129,20 @@ class HybridImageDataset(data.Dataset):
         - You will use self.transform to convert the PIL image to a torch Tensor
         """
 
-        ############################
-        ### TODO: YOUR CODE HERE ###
+        # 获取图像路径
+        image_a_path = self.images_a[idx]
+        image_b_path = self.images_b[idx]
 
-        raise NotImplementedError(
-            "`__getitem__ function in `part2_datasets.py` needs to be implemented"
-        )
+        # 使用PIL打开图像
+        image_a = PIL.Image.open(image_a_path)
+        image_b = PIL.Image.open(image_b_path)
 
-        ### END OF STUDENT CODE ####
-        ############################
+        # 应用变换，将PIL图像转换为torch张量
+        # ToTensor()会自动将(h, w, c)转换为(c, h, w)，并将像素值从[0,255]归一化到[0,1]
+        image_a = self.transform(image_a)
+        image_b = self.transform(image_b)
+
+        # 获取对应的截止频率
+        cutoff_frequency = self.cutoff_frequencies[idx]
 
         return image_a, image_b, cutoff_frequency

@@ -48,15 +48,16 @@ class HybridImageModel(nn.Module):
         - You can use torch.Tensor() to convert numpy arrays to torch Tensors.
         """
 
-        ############################
-        ### TODO: YOUR CODE HERE ###
+        # 创建二维高斯核，形状为 (k, k)
+        kernel_2d = create_Gaussian_kernel_2D(cutoff_frequency)
+        k = kernel_2d.shape[0]  # 核的大小 k
 
-        raise NotImplementedError(
-            "`get_kernel` function in `part2_models.py` needs to be implemented"
-        )
-
-        ### END OF STUDENT CODE ####
-        ############################
+        # 首先将 (k, k) 扩展为 (1, 1, k, k)
+        kernel = np.reshape(kernel_2d, (1, 1, k, k))
+        # 然后沿通道维度重复 c 次，得到 (c, 1, k, k)
+        kernel = np.tile(kernel, (self.n_channels, 1, 1, 1))
+        # 转换为 torch 张量
+        kernel = torch.Tensor(kernel)
 
         return kernel
 
@@ -79,15 +80,17 @@ class HybridImageModel(nn.Module):
           filter will be applied to.
         """
 
-        ############################
-        ### TODO: YOUR CODE HERE ###
+       # 计算填充大小，保持输出尺寸与输入相同
+        k = kernel.shape[2]  # 核的大小 k
+        padding = k // 2  # 填充大小
 
-        raise NotImplementedError(
-            "`low_pass` function in `part2_models.py` needs to be implemented"
+        # 应用 2D 卷积
+        filtered_image = F.conv2d(
+            x,
+            kernel,
+            padding=padding,
+            groups=self.n_channels  # 按通道分组 groups 参数针对的是 shape 的 第 2 个维度（索引为 1）
         )
-
-        ### END OF STUDENT CODE ####
-        ############################
 
         return filtered_image
 
@@ -121,14 +124,44 @@ class HybridImageModel(nn.Module):
         """
         self.n_channels = image1.shape[1]
 
-        ############################
-        ### TODO: YOUR CODE HERE ###
+        batch_size = image1.shape[0]       # 获取批量大小
 
-        raise NotImplementedError(
-            "`forward` function in `part2_models.py` needs to be implemented"
-        )
+        low_frequencies_list = []
+        high_frequencies_list = []
+        hybrid_image_list = []
 
-        ### END OF STUDENT CODE ####
-        ############################
+        for i in range(batch_size):
+            # 获取当前图像对和对应的截止频率
+            img1 = image1[i].unsqueeze(0)  # 形状 (1, c, m, n)
+            img2 = image2[i].unsqueeze(0)  # 形状 (1, c, m, n)
+            cf = cutoff_frequency[i].item()
+            
+            # 生成高斯核
+            kernel = self.get_kernel(cf)
+
+            # 对 img1 应用低通滤波
+            low_freq = self.low_pass(img1, kernel)
+
+            # 对 img2 应用低通滤波并计算高频内容
+            low_freq_img2 = self.low_pass(img2, kernel)
+            high_freq = img2 - low_freq_img2
+
+            # 计算混合图像
+            hybrid = low_freq + high_freq
+
+            # 将结果添加到列表中
+            low_frequencies_list.append(low_freq)
+            high_frequencies_list.append(high_freq)
+            hybrid_image_list.append(hybrid)
+
+        # 将列表中的张量堆叠成批次张量
+        low_frequencies = torch.cat(low_frequencies_list, dim=0)
+        high_frequencies = torch.cat(high_frequencies_list, dim=0)
+        hybrid_image = torch.cat(hybrid_image_list, dim=0)
+
+        # 将像素值裁剪到 [0, 1] 范围内
+        low_frequencies = torch.clamp(low_frequencies, 0, 1)
+        #high_frequencies = torch.clamp(high_frequencies, 0, 1)
+        hybrid_image = torch.clamp(hybrid_image, 0, 1)
 
         return low_frequencies, high_frequencies, hybrid_image

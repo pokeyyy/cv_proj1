@@ -26,6 +26,7 @@ def create_Gaussian_kernel_1D(ksize: int, sigma: int) -> np.ndarray:
     - The goal is to discretize a 1d continuous distribution onto a vector.
     """
     # 输入验证：确保 ksize 和 sigma 是有效的
+    ksize = int(ksize)
     if ksize <= 0:
         raise ValueError("ksize 必须是一个正整数")
     if sigma <= 0:
