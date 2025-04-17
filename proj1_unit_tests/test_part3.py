@@ -15,7 +15,7 @@ def test_my_conv2d_pytorch():
     """Assert that convolution output is correct, and groups are handled correctly
     for a 2-channel image with 4 filters (yielding 2 groups).
     """
-    image = torch.zeros((1, 2, 3, 3), dtype=float)
+    image = torch.zeros((1, 2, 3, 3), dtype=torch.float)
     image[0, 0] = torch.tensor(
         [
             [0, 1, 2],

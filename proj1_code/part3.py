@@ -32,14 +32,25 @@ def my_conv2d_pytorch(image: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor
     - You can assume only square filters for this function.
     """
 
-    ############################
-    ### TODO: YOUR CODE HERE ###
+    # 获取输入通道数 d1
+    in_channels = image.shape[1]  # d1
 
-    raise NotImplementedError(
-        "`my_conv2d_pytorch` function in `part3.py` needs to be implemented"
+    # 卷积核大小 k
+    kernel_size = kernel.shape[-1]  # k
+
+    # 为了输出与输入保持相同的空间大小，padding 设为 k // 2
+    padding = kernel_size // 2
+
+    # 调用 PyTorch 的 2D 卷积函数
+    # groups=in_channels 表示按通道分组卷积，每个输入通道独立卷积
+    # bias=None 表示不加偏置，stride=1 表示步幅为1
+    filtered_image = F.conv2d(
+        input=image,
+        weight=kernel,
+        bias=None,
+        stride=1,
+        padding=padding,
+        groups=in_channels
     )
-
-    ### END OF STUDENT CODE ####
-    ############################
 
     return filtered_image
